@@ -1,8 +1,8 @@
-# Assignment 6
-`Due April 12th, before midnight`
+# Assignment 7
+`Due April 24th, before midnight`
 
 ## Task
-Please implement uploading a profile picture to the imageApp developed in class. Start with the code handout given.
+Please implement changing the image title to the imageApp developed in class. Start with the code handout given.
 
 ## Reference
 
