@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> RSS Reader</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="asyncReq.js"></script>
+        <meta name = "viewport" content="width=device-width, initial-scale=1">      
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">          
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body onload="loadAllFeeds()">
+        <div id="rssListWrapper">  
+            <button class="btn waves-effect waves-light blue" id = "addButton" onclick="addNew()">Add New</button>
+            
+            <script>if(window.innerWidth <=910){
+              document.getElementById("addButton").remove();
+              loadAllFeeds();
+            }</script>
+            <div id="rssList">
+            </div>
+        </div>
+
+        <div id="itemListWrapper">
+            <button class="btn waves-effect waves-light blue" id = "editButton" onclick="editCurrFeed()">Edit</button>
+            <button class="btn waves-effect waves-light red" id = "deleteButton" style="float:right" onclick="deleteCurrFeed()">Delete</button>
+
+            <script>if (window.innerWidth <= 910){            
+                <button class="btn waves-effect waves-light blue" id = "addButton" onclick="addNew()">Add New</button>
+              loadAllFeeds();
+              }</script>
+
+          <div id="itemList">
+          </div>
+        </div>
+
+        <div id="itemDetails">
+        </div>  
+      
+    </body>
+    <script>
+      function editCurrFeed()
+      {
+        var name = prompt("Rename RSS feed:", feeds[currentFeed].name);
+        if(name != null){
+          loadURL("/editFeed?name=" + name + "&id=" + feeds[currentFeed]._id, function(data){
+            console.log(data);
+            loadAllFeeds();
+            loadFeed(currentFeed);
+          });
+        }
+      }
+      function addNew(){
+        var url = prompt("Enter the URL of the RSS feed you want to add");
+        if(url != null){
+          loadURL("/addFeed?url=" + url, function(data){
+            console.log(data);
+            loadAllFeeds();
+          });
+        }
+      }
+
+      function deleteCurrFeed()
+      {
+          if(confirm("Are you sure you want to delete this feed?")) {
+              //delete rss feed
+                loadURL("/deleteFeed?" + "&id=" + feeds[currentFeed]._id, function (data) {
+              });
+              document.getElementById("itemDetails").remove();
+              document.getElementById("itemList").remove();
+          }
+          loadAllFeeds();
+      }
+
+      var feeds;
+      var currentFeed = -1;
+      var currItem = -1;
+      
+      function loadAllFeeds(){
+            loadURL("/getFeeds", function(data){
+                console.log("loading new feed");
+                feeds = JSON.parse(data);
+                document.getElementById("rssList").innerHTML = "";
+                for(var i = 0; i < feeds.length; i++){
+                    var feed = feeds[i];
+                    var feedDiv = document.createElement("button");
+                    feedDiv.className = "feed";
+                    feedDiv.innerHTML = "<h1>" + feed.name + "</h1>" + "<p>" + feed.url + "</p>";
+                    var y = function(i){
+                        var x = i;
+                        return function(){
+                            if(window.innerWidth <= 910){
+                                document.getElementById("rssListWrapper").remove(); //only for small screens
+                                document.getElementById("itemListWrapper").classList.add("focus");
+                            }
+                            loadFeed(x);
+                        }
+                    }
+                    feedDiv.onclick =  y(i);
+                    document.getElementById("rssList").appendChild(feedDiv);
+                }
+            });
+        }
+
+      function loadFeed(index){
+        document.getElementsByTagName("body")[0].className = "ItemList";
+        $("#rssList button").removeClass("selected");
+        $("#rssList button:eq(" + index + ")").addClass("selected");
+
+        console.log(feeds[index], index);
+        currentFeed = index;
+        var url = "./makeHTTPReq?url=" + feeds[index].url;
+        loadURL(url, function(resData){
+           jsonObj = JSON.parse(resData);
+           generateMarkup(feeds[index]);
+        });
+      }
+
+      function itemClicked(index){
+          var list = jsonObj.feed.results[index];
+
+         markup = "<img width=2 00 src='"+ list.artworkUrl100 +"'>" +
+              "<a target='_blank' href='"+ list.url + "'><h1>" + list.name + "</h1></a>" + 
+              "<a target='_blank' href='"+ list.artistUrl +"'><h2>" + list.artistName + "</h2></a>"
+          console.log("this is markup" + markup);
+          document.getElementById("itemDetails").innerHTML  = markup;
+          document.getElementsByTagName("body")[0].className = "details";
+          $("#itemList button:nth-of-type(" + (index + 1) + ")").addClass("selected");
+      }
+
+      function generateMarkup(currentFeed)
+      {
+        var list = jsonObj.feed.results;
+        markup = "";
+        for (var i = 0; i < list.length; i++){
+          markup += "<button onclick='itemClicked("+ i +")'>" +
+              "<img src='"+ list[i].artworkUrl100 +"'>" +
+              "<h1>" + list[i].name + "</h1>" + 
+              "<h2>" + list[i].artistName + "</h2>" + 
+            "</button>";
+        }
+        console.log(markup);
+        document.getElementById("itemList").innerHTML  = markup;
+      }
+      
+      </script>
+</html>
